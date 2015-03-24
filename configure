@@ -1,0 +1,12 @@
+#! /bin/sh
+
+### Makefile.rules
+
+rm -f Makefile.rules
+
+touch Makefile.rules
+while [ $# -gt 0 ]
+do
+  echo $1 >> Makefile.rules
+  shift
+done
