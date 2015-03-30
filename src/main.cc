@@ -16,6 +16,7 @@ std::vector<std::wstring> dict;
 
 using word_t = typename frequency_list::word_t;
 
+frequency_list first_frequency;
 frequency_list frequency;
 markov_chain<word_t> first_chain;
 markov_chain<word_t, word_t> second_chain;
@@ -75,23 +76,55 @@ static void init_dict(const char* file, std::vector<std::wstring>& storage)
   delete f;
 }
 
+static word_t generate_word(word_t first, word_t second)
+{
+  word_t res;
+  try
+  {
+    res = second_chain.get(first, second);
+  } catch (no_word_error& error)
+  {
+    try
+    {
+      res = first_chain.get(first);
+    } catch (no_word_error& error2)
+    {
+      res = frequency.get();
+    }
+  }
+  return res;
+}
+
 
 static void generate(int n)
 {
-  word_t second = frequency.get();
-  word_t first = first_chain.get(second);
-  std::cout << wstrToUtf8(second) << " " << wstrToUtf8(first) << " ";
+  word_t second;
+  try{
+    second = first_frequency.get();
+  }
+  catch (no_word_error& error)
+  {
+    second = frequency.get();
+  }
+  word_t first;
+  try{
+    first = first_chain.get(second);
+  } catch (no_word_error& error)
+  {
+    first = frequency.get();
+  }
+  std::cout << wstrToUtf8(second) << " " << wstrToUtf8(first);
   for (int i = 0; i < n; i++) {
     size_t count = 0;
     {
-      word_t temp = second_chain.get(first, second);
+      word_t temp = generate_word(first, second);
       second = first;
       first = temp;
       std::cout << " " << wstrToUtf8(first);
     }
     while (!is_end_punctuation(first) && count < 100)
     {
-      word_t temp = second_chain.get(first, second);
+      word_t temp = generate_word(first, second);
       second = first;
       first = temp;
       if (!is_punctuation(first))
@@ -127,8 +160,12 @@ int main(int argc, const char *argv[])
   word_t second;
   for (auto w : dict)
   {
-    if (!is_punctuation(w[0]) && iswupper(w[0]))
+    if (!is_punctuation(w[0]))
+    {
+      if (iswupper(w[0]))
+        first_frequency.insert(w);
       frequency.insert(w);
+    }
     if (words > 0)
     {
       if (!is_end_punctuation(w[0]) && !iswupper(w[0]))

@@ -8,6 +8,8 @@
 #include "hash.hh"
 #include "utf8.hh"
 
+class no_word_error {};
+
 class frequency_list
 {
 public:
@@ -40,6 +42,8 @@ public:
 
   word_t get()
   {
+    if (!total_)
+      throw no_word_error{};
     size_t seed = rand() % total_;
     size_t index = 0;
     for (auto p : list_)
